@@ -144,12 +144,9 @@ def _process_single_ticker(ticker, time_frame, company_name):
     if isinstance(market_cap, (int, float)): market_cap = f"${market_cap:,}"
     if isinstance(avg_volume, (int, float)): avg_volume = f"{avg_volume:,}"
     
-    # Safe Dividend Yield Formatting
+    # Direct Dividend Yield Formatting (No multiplication, no conditional branches)
     if isinstance(div_yield, (int, float)): 
-        if div_yield < 1.0:
-            div_yield = f"{div_yield * 100:.2f}%"
-        else:
-            div_yield = f"{div_yield:.2f}%"
+        div_yield = f"{div_yield:.2f}%"
     elif div_yield == 'N/A' or div_yield is None:
         div_yield = "N/A"
 
