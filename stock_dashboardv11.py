@@ -14,8 +14,8 @@ import concurrent.futures
 
 # --- 1. App UI Initialization ---
 st.set_page_config(page_title="AI Stock Competitor Dashboard v12", layout="wide")
-st.title("📈 Advanced Quantitative AI Stock Dashboard (v12)")
-st.caption("Created by Teddie Hutchings | Upgraded with Multithreaded Parallel Processing")
+st.title("📈 AI Sector & Competitor Dashboard")
+st.caption("Created by Teddie Hutchings")
 
 # Program Description
 st.markdown("""
