@@ -13,7 +13,7 @@ from google.genai import errors
 import concurrent.futures
 
 # --- 1. App UI Initialization ---
-st.set_page_config(page_title="AI Stock Competitor Dashboard v12", layout="wide")
+st.set_page_config(page_title="AI Sector & Competitor Dashboard", layout="wide")
 st.title("📈 AI Sector & Competitor Dashboard")
 st.caption("Created by Teddie Hutchings")
 
