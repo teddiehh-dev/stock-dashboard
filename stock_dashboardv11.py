@@ -17,7 +17,7 @@ st.set_page_config(page_title="AI Stock Competitor Dashboard v12", layout="wide"
 st.title("📈 Advanced Quantitative AI Stock Dashboard (v12)")
 st.caption("Created by Teddie Hutchings | Upgraded with Multithreaded Parallel Processing")
 
-# Brief description of the program
+# Program Description
 st.markdown("""
 **Welcome to the Advanced Quantitative AI Stock Dashboard.** 
 This tool leverages Google's Gemini AI to dynamically identify direct market competitors for any target stock. 
@@ -132,23 +132,29 @@ def _process_single_ticker(ticker, time_frame, company_name):
         pe_ratio = info.get('trailingPE', 'N/A')
         market_cap = info.get('marketCap', 'N/A')
         avg_volume = info.get('averageVolume', info.get('averageDailyVolume10Day', 'N/A'))
-        div_yield = info.get('dividendYield', 'N/A')
+        
+        # Extract cash dividend paid per share
+        dividend_rate = info.get('dividendRate', 'N/A')
     except Exception:
-        current_price, pe_ratio, market_cap, avg_volume, div_yield = 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'
+        current_price, pe_ratio, market_cap, avg_volume, dividend_rate = 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'
 
     if current_price == 'N/A' and not hist.empty and 'clean_close' in locals() and len(clean_close) > 0:
         current_price = float(clean_close.values[-1])
-        
+
+    # Preserve numeric price for calculation before string formatting
+    raw_price = current_price if isinstance(current_price, (int, float)) else None
+    
+    # Calculate dividend yield manually from cash dividend per share
+    if isinstance(dividend_rate, (int, float)) and raw_price is not None and raw_price > 0:
+        calculated_yield = (dividend_rate / raw_price) * 100
+        div_yield_display = f"{calculated_yield:.2f}%"
+    else:
+        div_yield_display = "N/A"
+
     if isinstance(current_price, (int, float)): current_price = f"${current_price:,.2f}"
     if isinstance(pe_ratio, float): pe_ratio = f"{pe_ratio:.2f}"
     if isinstance(market_cap, (int, float)): market_cap = f"${market_cap:,}"
     if isinstance(avg_volume, (int, float)): avg_volume = f"{avg_volume:,}"
-    
-    # Direct Dividend Yield Formatting (No multiplication, no conditional branches)
-    if isinstance(div_yield, (int, float)): 
-        div_yield = f"{div_yield:.2f}%"
-    elif div_yield == 'N/A' or div_yield is None:
-        div_yield = "N/A"
 
     fund_row = {
         "Ticker": ticker,
@@ -157,7 +163,7 @@ def _process_single_ticker(ticker, time_frame, company_name):
         "P/E Ratio": pe_ratio,
         "Market Cap": market_cap,
         "Avg Volume": avg_volume,
-        "Dividend Yield": div_yield 
+        "Dividend Yield": div_yield_display 
     }
     
     return ticker, hist, growth_val, fund_row
@@ -319,7 +325,7 @@ if 'target_ticker' in st.session_state:
         * **P/E Ratio (Price-to-Earnings):** A primary valuation multiplier computed by dividing the current share price by its trailing 12-month earnings per share. High numbers indicate investors expect major future growth or that the stock is currently expensive.
         * **Market Cap (Market Capitalization):** The total aggregate net market dollar value of the firm's outstanding equity. It designates the total operational scale tier of the corporation (e.g., Mega Cap, Large Cap).
         * **Avg Volume (Average Trading Volume):** The standard rolling quantity of shares transacted on public markets daily. High liquidity indexes allow capital deployment changes without creating adverse slippage or flash volatility.
-        * **Dividend Yield:** A financial ratio that shows how much a company pays out in dividends each year relative to its stock price. A value of N/A usually means the company does not currently pay a dividend.
+        * **Dividend Yield:** Calculated as annual cash dividends per share divided by the current share price. A value of N/A means the company does not currently pay a cash dividend.
         """)
         
     st.table(filtered_fundamentals)
