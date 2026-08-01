@@ -10,12 +10,21 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from google.genai import errors
-import concurrent.futures # <-- NEW: Multithreading Library
+import concurrent.futures
 
 # --- 1. App UI Initialization ---
 st.set_page_config(page_title="AI Stock Competitor Dashboard v12", layout="wide")
 st.title("📈 Advanced Quantitative AI Stock Dashboard (v12)")
 st.caption("Created by Teddie Hutchings | Upgraded with Multithreaded Parallel Processing")
+
+# NEW: Brief description of the program
+st.markdown("""
+**Welcome to the Advanced Quantitative AI Stock Dashboard.** 
+This tool leverages Google's Gemini AI to dynamically identify direct market competitors for any target stock. 
+It utilizes multithreaded processing to rapidly fetch historical pricing, calculate technical indicators, 
+compare key financial fundamentals, and summarize real-time market sentiment from global news feeds.
+""")
+st.markdown("---")
 
 # --- 2. Cached Business Logic Functions ---
 @st.cache_data(ttl=3600)
@@ -82,7 +91,6 @@ def discover_competitors_via_ai(stock_query):
         return {"error": f"Failed to parse AI structure: {str(e)}"}
 
 
-# --- NEW: Isolated Worker Function for Multithreading ---
 def _process_single_ticker(ticker, time_frame, company_name):
     """Processes a single ticker. Designed to be run in parallel on separate threads."""
     ticker = ticker.strip().upper()
@@ -124,8 +132,10 @@ def _process_single_ticker(ticker, time_frame, company_name):
         pe_ratio = info.get('trailingPE', 'N/A')
         market_cap = info.get('marketCap', 'N/A')
         avg_volume = info.get('averageVolume', info.get('averageDailyVolume10Day', 'N/A'))
+        # NEW: Fetch Dividend Yield
+        div_yield = info.get('dividendYield', 'N/A')
     except Exception:
-        current_price, pe_ratio, market_cap, avg_volume = 'N/A', 'N/A', 'N/A', 'N/A'
+        current_price, pe_ratio, market_cap, avg_volume, div_yield = 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'
 
     if current_price == 'N/A' and not hist.empty and 'clean_close' in locals() and len(clean_close) > 0:
         current_price = float(clean_close.values[-1])
@@ -134,14 +144,22 @@ def _process_single_ticker(ticker, time_frame, company_name):
     if isinstance(pe_ratio, float): pe_ratio = f"{pe_ratio:.2f}"
     if isinstance(market_cap, (int, float)): market_cap = f"${market_cap:,}"
     if isinstance(avg_volume, (int, float)): avg_volume = f"{avg_volume:,}"
+    
+    # NEW: Format Dividend Yield as a percentage
+    if isinstance(div_yield, float): 
+        div_yield = f"{div_yield * 100:.2f}%"
+    elif div_yield == 'N/A' or div_yield is None:
+        div_yield = "N/A"
 
+    # NEW: Added Dividend Yield to the data dictionary
     fund_row = {
         "Ticker": ticker,
         "Company Name": company_name,
         "Current Price": current_price,
         "P/E Ratio": pe_ratio,
         "Market Cap": market_cap,
-        "Avg Volume": avg_volume
+        "Avg Volume": avg_volume,
+        "Dividend Yield": div_yield 
     }
     
     return ticker, hist, growth_val, fund_row
@@ -154,14 +172,12 @@ def fetch_financial_market_data(tickers_list, ticker_to_name_map, time_frame):
     growth_metrics = {}
     fundamental_data = []
 
-    # NEW: Fire off all API requests simultaneously using ThreadPoolExecutor
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [
             executor.submit(_process_single_ticker, ticker, time_frame, ticker_to_name_map.get(ticker, "Unknown"))
             for ticker in tickers_list
         ]
         
-        # As each thread finishes downloading its specific stock, append it to our arrays
         for future in concurrent.futures.as_completed(futures):
             ticker, hist, growth_val, fund_row = future.result()
             
@@ -278,7 +294,6 @@ if 'target_ticker' in st.session_state:
         show_sma50 = st.checkbox("Show 50-Day SMA")
         show_rsi = st.checkbox("Show RSI Subplot Panel")
 
-    # Invoke Cached Multithreaded Market Data Operations
     with st.spinner('Fetching live market data and computing technicals...'):
         historical_dfs, growth_metrics, fundamental_data = fetch_financial_market_data(
             selected_tickers, ticker_to_name, time_frame
@@ -306,6 +321,7 @@ if 'target_ticker' in st.session_state:
         * **P/E Ratio (Price-to-Earnings):** A primary valuation multiplier computed by dividing the current share price by its trailing 12-month earnings per share. High numbers indicate investors expect major future growth or that the stock is currently expensive.
         * **Market Cap (Market Capitalization):** The total aggregate net market dollar value of the firm's outstanding equity. It designates the total operational scale tier of the corporation (e.g., Mega Cap, Large Cap).
         * **Avg Volume (Average Trading Volume):** The standard rolling quantity of shares transacted on public markets daily. High liquidity indexes allow capital deployment changes without creating adverse slippage or flash volatility.
+        * **Dividend Yield:** A financial ratio that shows how much a company pays out in dividends each year relative to its stock price. A value of N/A usually means the company does not currently pay a dividend.
         """)
         
     st.table(filtered_fundamentals)
@@ -384,11 +400,9 @@ if 'target_ticker' in st.session_state:
         
     st.markdown("---")
 
-    # 5g. Dynamic Sentiment News Streams Visual Execution Layout
     st.subheader("📰 Live AI Sentiment News Feed")
     news_col1, news_col2 = st.columns(2)
     
-    # NEW: Fetch both news feeds in parallel before rendering to UI
     with st.spinner('Aggregating and analyzing global sentiment...'):
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_target = executor.submit(fetch_ai_summarized_news, target_ticker, target_ticker)
@@ -416,5 +430,3 @@ if 'target_ticker' in st.session_state:
                 st.success(story['summary'])
         else:
             st.write("No matching vertical industry structural updates discovered.")
-
-            # & C:\Users\teddi\AppData\Local\Python\pythoncore-3.14-64\python.exe -m streamlit run "c:/Users/teddi/OneDrive/CV python projects/Stock dashboard/stock_dashboardv11.py"
