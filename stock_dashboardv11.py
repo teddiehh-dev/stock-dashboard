@@ -19,10 +19,10 @@ st.caption("Created by Teddie Hutchings")
 
 # Program Description
 st.markdown("""
-**Welcome to the Advanced Quantitative AI Stock Dashboard.** 
-This tool leverages Google's Gemini AI to dynamically identify direct market competitors for any target stock. 
-It utilizes multithreaded processing to rapidly fetch historical pricing, calculate technical indicators, 
-compare key financial fundamentals, and summarize real-time market sentiment from global news feeds.
+**Welcome to the AI Sector & Competitor Dashboard.** 
+This tool uses Google's Gemini AI to instantly map out the competitive landscape for any target equity. 
+Designed for rapid sector analysis, it utilizes multithreaded processing to seamlessly compare historical price performance, 
+evaluate key fundamental metrics, and synthesize real-time market sentiment from global news streams.
 """)
 st.markdown("---")
 
