@@ -17,7 +17,7 @@ st.set_page_config(page_title="AI Stock Competitor Dashboard v12", layout="wide"
 st.title("📈 Advanced Quantitative AI Stock Dashboard (v12)")
 st.caption("Created by Teddie Hutchings | Upgraded with Multithreaded Parallel Processing")
 
-# NEW: Brief description of the program
+# Brief description of the program
 st.markdown("""
 **Welcome to the Advanced Quantitative AI Stock Dashboard.** 
 This tool leverages Google's Gemini AI to dynamically identify direct market competitors for any target stock. 
@@ -132,7 +132,6 @@ def _process_single_ticker(ticker, time_frame, company_name):
         pe_ratio = info.get('trailingPE', 'N/A')
         market_cap = info.get('marketCap', 'N/A')
         avg_volume = info.get('averageVolume', info.get('averageDailyVolume10Day', 'N/A'))
-        # NEW: Fetch Dividend Yield
         div_yield = info.get('dividendYield', 'N/A')
     except Exception:
         current_price, pe_ratio, market_cap, avg_volume, div_yield = 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'
@@ -145,13 +144,15 @@ def _process_single_ticker(ticker, time_frame, company_name):
     if isinstance(market_cap, (int, float)): market_cap = f"${market_cap:,}"
     if isinstance(avg_volume, (int, float)): avg_volume = f"{avg_volume:,}"
     
-    # NEW: Format Dividend Yield as a percentage
-    if isinstance(div_yield, float): 
-        div_yield = f"{div_yield * 100:.2f}%"
+    # Safe Dividend Yield Formatting
+    if isinstance(div_yield, (int, float)): 
+        if div_yield < 1.0:
+            div_yield = f"{div_yield * 100:.2f}%"
+        else:
+            div_yield = f"{div_yield:.2f}%"
     elif div_yield == 'N/A' or div_yield is None:
         div_yield = "N/A"
 
-    # NEW: Added Dividend Yield to the data dictionary
     fund_row = {
         "Ticker": ticker,
         "Company Name": company_name,
